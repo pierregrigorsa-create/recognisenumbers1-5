@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Number Recognition 1–5 — Miss Numbi — Grade 1</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{font-family:'Nunito',sans-serif;background:#0f0c29;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 8px 24px;}
+#stage{width:100%;max-width:820px;background:#fff9f0;border-radius:22px;overflow:hidden;position:relative;box-shadow:0 24px 70px rgba(0,0,0,0.7);display:flex;flex-direction:column;}
+.float-num{position:absolute;font-family:'Fredoka One',cursive;opacity:0.05;pointer-events:none;user-select:none;animation:float-up 11s linear infinite;}
+@keyframes float-up{from{transform:translateY(110%) rotate(-12deg);}to{transform:translateY(-15%) rotate(12deg);}}
+.scene{display:none;flex-direction:column;flex:1;}
+.scene.active{display:flex;}
+.hband{width:100%;padding:14px 22px 12px;display:flex;flex-direction:column;justify-content:center;flex-shrink:0;}
+.hband h1{font-family:'Fredoka One',cursive;font-size:clamp(16px,2.4vw,25px);color:#fff;text-shadow:0 2px 5px rgba(0,0,0,0.22);}
+.hband p{font-size:clamp(11px,1.3vw,13px);color:rgba(255,255,255,0.92);font-weight:700;margin-top:2px;}
+.content{display:flex;flex-direction:column;align-items:center;padding:12px 18px 16px;gap:12px;}
+.teacher-row{display:flex;align-items:flex-start;gap:12px;width:100%;flex-shrink:0;}
+.tface{width:60px;height:60px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#FFD93D,#FF6B6B);display:flex;align-items:center;justify-content:center;font-size:32px;border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,0.2);}
+.tface.talking{animation:jaw 0.35s ease-in-out infinite alternate;}
+@keyframes jaw{from{transform:scale(1);}to{transform:scale(1.1) rotate(-3deg);}}
+.bubble{background:#fff;border-radius:6px 18px 18px 18px;padding:13px 17px;box-shadow:0 3px 12px rgba(0,0,0,0.1);border:2.5px solid #FFD93D;font-size:clamp(13px,1.65vw,16px);line-height:1.6;color:#2D3436;font-weight:700;flex:1;min-height:60px;}
+
+/* ── NUMBER SEARCH BOX ── */
+.search-box{
+  width:100%;background:#fff;border-radius:16px;
+  border:3px solid #E0E0E0;padding:16px 12px;
+  display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;
+  min-height:110px;
+  box-shadow:0 3px 14px rgba(0,0,0,0.08);
+}
+.search-box-label{font-size:13px;font-weight:900;color:#999;text-align:center;width:100%;margin-bottom:2px;}
+.num-tile{
+  width:58px;height:66px;border-radius:12px;
+  font-family:'Fredoka One',cursive;font-size:34px;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:#F0F0F0;color:#BBBBBB;
+  border:2.5px solid #E0E0E0;
+  cursor:pointer;user-select:none;
+  transition:transform 0.2s,background 0.25s,color 0.25s,border-color 0.25s,box-shadow 0.25s;
+  flex-shrink:0;
+}
+.num-tile:hover{transform:scale(1.08);}
+.num-tile.found{cursor:default;animation:found-pop 0.4s cubic-bezier(.34,1.56,.64,1);}
+@keyframes found-pop{0%{transform:scale(1);}45%{transform:scale(1.35) rotate(6deg);}100%{transform:scale(1);}}
+.num-tile.wrong-beep{animation:tile-shake 0.4s ease-in-out;}
+@keyframes tile-shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-7px);}75%{transform:translateX(7px);}}
+.num-tile.already{cursor:default;}
+
+/* ── SHAPE TAP BOX ── */
+.shape-box{
+  width:100%;background:#fff;border-radius:16px;
+  border:3px solid #E0E0E0;padding:14px 12px;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  box-shadow:0 3px 14px rgba(0,0,0,0.08);
+}
+.shape-box-label{font-size:13px;font-weight:900;color:#999;text-align:center;}
+.shapes-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;}
+.shape-slot{
+  display:inline-flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:transform 0.2s,opacity 0.2s;
+  opacity:0.22;
+}
+.shape-slot:hover{transform:scale(1.1);}
+.shape-slot.tapped{opacity:1;animation:shape-pop 0.4s cubic-bezier(.34,1.56,.64,1);}
+@keyframes shape-pop{0%{transform:scale(0.5) rotate(-15deg);opacity:0.3;}60%{transform:scale(1.25) rotate(4deg);}100%{transform:scale(1) rotate(0deg);opacity:1;}}
+.shape-slot.wrong-beep{animation:tile-shake 0.4s ease-in-out;}
+.count-display{font-family:'Fredoka One',cursive;font-size:28px;color:#555;text-align:center;}
+
+/* ── PROGRESS ── */
+#prog-wrap{width:100%;height:6px;background:rgba(0,0,0,0.1);flex-shrink:0;}
+#prog-fill{height:100%;background:linear-gradient(90deg,#FFD93D,#FF6B6B);width:0%;transition:width 0.5s linear;border-radius:0 4px 4px 0;}
+
+/* ── CONFETTI ── */
+.confetti-text{font-family:'Fredoka One',cursive;font-size:clamp(20px,2.8vw,30px);animation:rainbow 1.5s linear infinite;}
+@keyframes rainbow{0%{color:#FF6B6B;}25%{color:#FFD93D;}50%{color:#4ECDC4;}75%{color:#A29BFE;}100%{color:#FF6B6B;}}
+
+/* ── STAR BADGE ── */
+.star-badge{font-size:clamp(38px,5vw,56px);animation:spin-in 0.6s cubic-bezier(.34,1.56,.64,1);}
+@keyframes spin-in{from{transform:scale(0) rotate(-180deg);}to{transform:scale(1) rotate(0deg);}}
+
+/* ── CONTROLS ── */
+#controls-bar{width:100%;max-width:820px;background:rgba(255,255,255,0.06);border-radius:0 0 16px 16px;padding:10px 18px 13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.ctrl{padding:9px 20px;border-radius:50px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:900;border:none;cursor:pointer;transition:all 0.18s;box-shadow:0 3px 10px rgba(0,0,0,0.25);display:inline-flex;align-items:center;gap:6px;}
+.ctrl:hover{transform:translateY(-2px);filter:brightness(1.08);}
+.ctrl:active{transform:scale(0.96);}
+.ctrl-play{background:linear-gradient(135deg,#FF6B6B,#FF8E53);color:#fff;}
+.ctrl-pause{background:linear-gradient(135deg,#FFC048,#E6A000);color:#fff;}
+.ctrl-rewind{background:linear-gradient(135deg,#4ECDC4,#26B5AC);color:#fff;}
+.ctrl-forward{background:linear-gradient(135deg,#A29BFE,#6C5CE7);color:#fff;}
+.ctrl-mute{background:rgba(255,255,255,0.14);color:#fff;border:1.5px solid rgba(255,255,255,0.24);}
+#pdots{display:flex;gap:6px;align-items:center;margin-left:auto;}
+.sdot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,0.2);transition:all 0.3s;}
+.sdot.done{background:#28A745;}
+.sdot.active{background:#FFD93D;transform:scale(1.4);}
+.sdot-lbl{font-size:10px;font-weight:800;color:rgba(255,255,255,0.5);white-space:nowrap;}
+.vol-wave{display:flex;align-items:flex-end;gap:2px;height:18px;}
+.vb{width:3px;border-radius:2px;background:#FF6B6B;height:4px;}
+.vol-wave.on .vb{animation:vw 0.5s ease-in-out infinite alternate;}
+.vol-wave.on .vb:nth-child(1){animation-delay:0s;}.vol-wave.on .vb:nth-child(2){animation-delay:0.13s;}.vol-wave.on .vb:nth-child(3){animation-delay:0.26s;}.vol-wave.on .vb:nth-child(4){animation-delay:0.39s;}
+@keyframes vw{from{height:3px;}to{height:16px;}}
+
+/* ── FEEDBACK MODAL ── */
+#fb-overlay{display:none;position:fixed;inset:0;background:rgba(10,6,30,0.85);z-index:200;align-items:center;justify-content:center;}
+#fb-overlay.open{display:flex;}
+#fb-box{background:#fff;border-radius:22px;padding:26px 26px 22px;width:min(94vw,460px);box-shadow:0 24px 60px rgba(0,0,0,0.55);animation:slide-up 0.38s cubic-bezier(.34,1.56,.64,1);}
+@keyframes slide-up{from{transform:translateY(36px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+#fb-box h2{font-family:'Fredoka One',cursive;font-size:22px;color:#FF6B6B;margin-bottom:3px;}
+.sub{font-size:13px;color:#777;font-weight:600;margin-bottom:14px;}
+.fb-emojis{display:flex;gap:8px;margin-bottom:16px;}
+.fb-e{flex:1;padding:10px 4px;border-radius:12px;border:2.5px solid #EEE;font-size:26px;text-align:center;cursor:pointer;transition:all 0.18s;background:#fafafa;}
+.fb-e:hover{transform:scale(1.07);}
+.fb-e.sel{border-color:#FF6B6B;background:#FFF0F0;}
+.fb-e span{display:block;font-size:10px;font-weight:800;color:#777;margin-top:3px;}
+.fb-input{width:100%;padding:10px 13px;border:2px solid #EEE;border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;margin-bottom:9px;outline:none;transition:border-color 0.2s;}
+.fb-input:focus{border-color:#FF6B6B;}
+.fb-ta{height:68px;resize:none;}
+.fb-btns{display:flex;gap:9px;}
+#fb-send{flex:1;padding:11px;border-radius:50px;border:none;cursor:pointer;background:linear-gradient(135deg,#FF6B6B,#FF8E53);color:#fff;font-family:'Nunito',sans-serif;font-size:14px;font-weight:900;transition:all 0.18s;}
+#fb-send:hover{transform:translateY(-2px);}
+#fb-cancel{padding:11px 18px;border-radius:50px;border:2px solid #EEE;background:#fff;color:#aaa;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;}
+#fb-thanks{display:none;text-align:center;padding:14px 0;}
+#fb-thanks .ck{font-size:52px;}
+#fb-thanks p{font-size:14px;font-weight:800;color:#28A745;margin-top:7px;}
+
+.bg-a{background:linear-gradient(155deg,#fff9f0,#ffeaa7);}
+.bg-3{background:linear-gradient(155deg,#fff5f5,#fff9f0);}
+.bg-4{background:linear-gradient(155deg,#f0fff4,#f9fff9);}
+.bg-2{background:linear-gradient(155deg,#f0f4ff,#f9f9ff);}
+.bg-5{background:linear-gradient(155deg,#fffef0,#fffff9);}
+.bg-1{background:linear-gradient(155deg,#fff8f0,#fffaf9);}
+.bg-done{background:linear-gradient(155deg,#f0fff8,#eafffb);}
+
+/* tap-prompt */
+.tap-prompt{font-size:15px;font-weight:900;color:#FF6B6B;text-align:center;animation:tap-pulse 1.1s ease-in-out infinite;}
+@keyframes tap-pulse{0%,100%{opacity:0.7;transform:scale(1);}50%{opacity:1;transform:scale(1.04);}}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="float-num" style="font-size:100px;left:3%;animation-delay:0s;animation-duration:12s;color:#FF6B6B;">3</div>
+  <div class="float-num" style="font-size:80px;left:22%;animation-delay:3s;animation-duration:9s;color:#4ECDC4;">1</div>
+  <div class="float-num" style="font-size:110px;left:54%;animation-delay:5s;animation-duration:13s;color:#FFD93D;">5</div>
+  <div class="float-num" style="font-size:70px;left:76%;animation-delay:1.5s;animation-duration:10s;color:#A29BFE;">2</div>
+
+  <!-- SCENE 0: TITLE -->
+  <div class="scene active bg-a" id="sc0">
+    <div class="hband" style="background:linear-gradient(135deg,#FF6B6B,#FF8E53);">
+      <h1>🌟 I Know My Numbers 1 to 5!</h1>
+      <p>Miss Numbi · Grade 1 Mathematics · Balmoral Primary</p>
+    </div>
+    <div class="content">
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;" id="tc-nums"></div>
+      <div class="teacher-row"><div class="tface" id="tf0">👩‍🏫</div><div class="bubble" id="bb0"></div></div>
+    </div>
+    <div id="prog-wrap"><div id="prog-fill"></div></div>
+  </div>
+
+  <!-- SCENE 1: NUMBER 3 -->
+  <div class="scene bg-3" id="sc1">
+    <div class="hband" style="background:linear-gradient(135deg,#E74C3C,#C0392B);">
+      <h1>Number 3 — Find all the 3s! 🔴</h1>
+      <p>Tap every number 3 you can see — they will turn RED!</p>
+    </div>
+    <div class="content">
+      <div class="tap-prompt" id="tp1" style="display:none;">👆 Tap all the 3s!</div>
+      <div class="search-box" id="sb1">
+        <div class="search-box-label">Find and tap all the 3s!</div>
+      </div>
+      <div class="shape-box" id="shb1" style="display:none;">
+        <div class="shape-box-label" id="sbl1">Now tap 3 red triangles — count with Miss Numbi!</div>
+        <div class="shapes-row" id="shr1"></div>
+        <div class="count-display" id="scd1">0 / 3</div>
+      </div>
+      <div class="teacher-row"><div class="tface" id="tf1">👩‍🏫</div><div class="bubble" id="bb1"></div></div>
+    </div>
+  </div>
+
+  <!-- SCENE 2: NUMBER 4 -->
+  <div class="scene bg-4" id="sc2">
+    <div class="hband" style="background:linear-gradient(135deg,#27AE60,#1E8449);">
+      <h1>Number 4 — Find all the 4s! 🟢</h1>
+      <p>Tap every number 4 you can see — they will turn GREEN!</p>
+    </div>
+    <div class="content">
+      <div class="tap-prompt" id="tp2" style="display:none;">👆 Tap all the 4s!</div>
+      <div class="search-box" id="sb2">
+        <div class="search-box-label">Find and tap all the 4s!</div>
+      </div>
+      <div class="shape-box" id="shb2" style="display:none;">
+        <div class="shape-box-label" id="sbl2">Now tap 4 green circles — count with Miss Numbi!</div>
+        <div class="shapes-row" id="shr2"></div>
+        <div class="count-display" id="scd2">0 / 4</div>
+      </div>
+      <div class="teacher-row"><div class="tface" id="tf2">👩‍🏫</div><div class="bubble" id="bb2"></div></div>
+    </div>
+  </div>
+
+  <!-- SCENE 3: NUMBER 2 -->
+  <div class="scene bg-2" id="sc3">
+    <div class="hband" style="background:linear-gradient(135deg,#2980B9,#1A6EA8);">
+      <h1>Number 2 — Find all the 2s! 🔵</h1>
+      <p>Tap every number 2 you can see — they will turn BLUE!</p>
+    </div>
+    <div class="content">
+      <div class="tap-prompt" id="tp3" style="display:none;">👆 Tap all the 2s!</div>
+      <div class="search-box" id="sb3">
+        <div class="search-box-label">Find and tap all the 2s!</div>
+      </div>
+      <div class="shape-box" id="shb3" style="display:none;">
+        <div class="shape-box-label" id="sbl3">Now tap 2 blue squares — count with Miss Numbi!</div>
+        <div class="shapes-row" id="shr3"></div>
+        <div class="count-display" id="scd3">0 / 2</div>
+      </div>
+      <div class="teacher-row"><div class="tface" id="tf3">👩‍🏫</div><div class="bubble" id="bb3"></div></div>
+    </div>
+  </div>
+
+  <!-- SCENE 4: NUMBER 5 -->
+  <div class="scene bg-5" id="sc4">
+    <div class="hband" style="background:linear-gradient(135deg,#FFE000,#C8B200);">
+      <h1>Number 5 — Find all the 5s! 🟡</h1>
+      <p>Tap every number 5 you can see — they will turn YELLOW!</p>
+    </div>
+    <div class="content">
+      <div class="tap-prompt" id="tp4" style="display:none;">👆 Tap all the 5s!</div>
+      <div class="search-box" id="sb4">
+        <div class="search-box-label">Find and tap all the 5s!</div>
+      </div>
+      <div class="shape-box" id="shb4" style="display:none;">
+        <div class="shape-box-label" id="sbl4">Now tap 5 yellow rectangles — count with Miss Numbi!</div>
+        <div class="shapes-row" id="shr4"></div>
+        <div class="count-display" id="scd4">0 / 5</div>
+      </div>
+      <div class="teacher-row"><div class="tface" id="tf4">👩‍🏫</div><div class="bubble" id="bb4"></div></div>
+    </div>
+  </div>
+
+  <!-- SCENE 5: NUMBER 1 -->
+  <div class="scene bg-1" id="sc5">
+    <div class="hband" style="background:linear-gradient(135deg,#E67E22,#CA6F1E);">
+      <h1>Number 1 — Find all the 1s! 🟠</h1>
+      <p>Tap every number 1 you can see — they will turn ORANGE!</p>
+    </div>
+    <div class="content">
+      <div class="tap-prompt" id="tp5" style="display:none;">👆 Tap all the 1s!</div>
+      <div class="search-box" id="sb5">
+        <div class="search-box-label">Find and tap all the 1s!</div>
+      </div>
+      <div class="shape-box" id="shb5" style="display:none;">
+        <div class="shape-box-label" id="sbl5">Now tap 1 orange oval — count with Miss Numbi!</div>
+        <div class="shapes-row" id="shr5"></div>
+        <div class="count-display" id="scd5">0 / 1</div>
+      </div>
+      <div class="teacher-row"><div class="tface" id="tf5">👩‍🏫</div><div class="bubble" id="bb5"></div></div>
+    </div>
+  </div>
+
+  <!-- SCENE 6: ALL DONE -->
+  <div class="scene bg-done" id="sc6">
+    <div class="hband" style="background:linear-gradient(135deg,#00B894,#00CEC9);">
+      <h1>🏆 You Know ALL Your Numbers!</h1>
+    </div>
+    <div class="content">
+      <div class="star-badge">🌟</div>
+      <div class="confetti-text">YOU ARE A NUMBER SUPERSTAR! 🎉</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;" id="s6-summary"></div>
+      <div style="background:#fff;border-radius:14px;padding:10px 16px;border:2px solid #c3e6cb;width:100%;max-width:600px;">
+        <div style="font-size:11px;font-weight:800;color:#2D9E77;margin-bottom:4px;">🏠 For Mummy and Daddy:</div>
+        <div style="font-size:13px;color:#444;font-weight:600;line-height:1.6;">Your child recognised and counted numbers 1 to 5 all by herself today! To practise at home: write numbers 1–5 on paper and ask her to find them in books or around the house. Use objects like buttons or stones to count out the right amount for each number. Well done! 💕</div>
+      </div>
+      <div class="teacher-row"><div class="tface" id="tf6">👩‍🏫</div><div class="bubble" id="bb6"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTROLS: Play, Pause, Rewind, Mute, dots, Feedback, Play Again -->
+<div id="controls-bar">
+  <button class="ctrl ctrl-play"   id="btn-start"  onclick="startVideo()">▶ Play Lesson</button>
+  <button class="ctrl ctrl-pause"  id="btn-pause"  onclick="togglePause()" style="display:none;">⏸ Pause</button>
+  <button class="ctrl ctrl-rewind" id="btn-rewind"   onclick="rewindScene()"   style="display:none;">⏮ Rewind</button>
+  <button class="ctrl ctrl-forward" id="btn-forward" onclick="forwardScene()" style="display:none;">⏭ Forward</button>
+  <button class="ctrl ctrl-mute"   id="btn-mute"   onclick="toggleMute()">🔊</button>
+  <div class="vol-wave" id="vwave"><div class="vb"></div><div class="vb"></div><div class="vb"></div><div class="vb"></div></div>
+  <div id="pdots">
+    <span class="sdot-lbl">Lesson:</span>
+    <div class="sdot active" id="d0"></div><div class="sdot" id="d1"></div><div class="sdot" id="d2"></div>
+    <div class="sdot" id="d3"></div><div class="sdot" id="d4"></div><div class="sdot" id="d5"></div><div class="sdot" id="d6"></div>
+  </div>
+  <button class="ctrl" id="btn-fb" onclick="openFB()" style="background:linear-gradient(135deg,#FFC048,#E6A000);color:#fff;display:none;">💬 Feedback</button>
+  <button class="ctrl" id="btn-replay" onclick="replayVideo()" style="background:linear-gradient(135deg,#6C5CE7,#A29BFE);color:#fff;display:none;">🔄 Play Again</button>
+</div>
+
+<div id="fb-overlay">
+  <div id="fb-box">
+    <h2>📝 Parent Feedback</h2>
+    <div class="sub">Tell Miss Numbi how your child did today!</div>
+    <div class="fb-emojis">
+      <div class="fb-e" onclick="selE(this,'🟢')">🟢<span>Got it!</span></div>
+      <div class="fb-e" onclick="selE(this,'🟡')">🟡<span>Almost</span></div>
+      <div class="fb-e" onclick="selE(this,'🔴')">🔴<span>Struggled</span></div>
+      <div class="fb-e" onclick="selE(this,'⏭️')">⏭️<span>Didn't try</span></div>
+    </div>
+    <input class="fb-input" id="fb-name" placeholder="Child's name (optional)"/>
+    <textarea class="fb-input fb-ta" id="fb-note" placeholder="Any message for the teacher? (optional)"></textarea>
+    <div class="fb-btns">
+      <button id="fb-cancel" onclick="closeFB()">Cancel</button>
+      <button id="fb-send" onclick="sendFB()">✅ Send to Teacher</button>
+    </div>
+    <div id="fb-thanks"><div class="ck">✅</div><p>Feedback sent! Thank you! 💕</p></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// BEEP
+// ═══════════════════════════════════════════════════════════
+function beep(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.type='square';o.frequency.value=520;
+    g.gain.setValueAtTime(0.18,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.32);
+    o.start(ctx.currentTime);o.stop(ctx.currentTime+0.32);
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let muted=false, paused=false, playing=false, currentSc=0, runVer=0;
+let bTimer=null, selEmoji='';
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
+
+// waitPause — blocks between steps while paused
+async function waitPause(){while(paused)await delay(80);}
+
+// Lesson data
+const LESSONS=[
+  {target:3,color:'#E74C3C',shapeCnt:3,shapeName:'triangle', shapeColor:'#E74C3C',shapeLabel:'red triangles',    countWord:['one','two','three']},
+  {target:4,color:'#27AE60',shapeCnt:4,shapeName:'circle',   shapeColor:'#27AE60',shapeLabel:'green circles',    countWord:['one','two','three','four']},
+  {target:2,color:'#2980B9',shapeCnt:2,shapeName:'square',   shapeColor:'#2980B9',shapeLabel:'blue squares',     countWord:['one','two']},
+  {target:5,color:'#FFE000',shapeCnt:5,shapeName:'rectangle',shapeColor:'#FFE000',shapeLabel:'yellow rectangles',countWord:['one','two','three','four','five']},
+  {target:1,color:'#E67E22',shapeCnt:1,shapeName:'oval',     shapeColor:'#E67E22',shapeLabel:'orange oval',      countWord:['one']},
+];
+const NW=['','one','two','three','four','five'];
+
+// ═══════════════════════════════════════════════════════════
+// VOICE HELPERS
+// ═══════════════════════════════════════════════════════════
+let cachedVoice=null;
+function getVoice(){
+  if(cachedVoice)return cachedVoice;
+  const vs=window.speechSynthesis.getVoices();
+  const want=['Samantha','Karen','Moira','Tessa','Fiona','Victoria','Alice','Veena','Google UK English Female','Microsoft Zira'];
+  for(const nm of want){const f=vs.find(x=>x.name.includes(nm));if(f){cachedVoice=f;return f;}}
+  cachedVoice=vs.find(x=>x.lang.startsWith('en')&&x.name.toLowerCase().includes('female'))
+             ||vs.find(x=>x.lang.startsWith('en'))
+             ||vs[0]||null;
+  return cachedVoice;
+}
+window.speechSynthesis&&window.speechSynthesis.getVoices();
+window.speechSynthesis&&(window.speechSynthesis.onvoiceschanged=()=>{cachedVoice=null;getVoice();});
+
+// ═══════════════════════════════════════════════════════════
+// SPEECH — speak(text, scIdx, ver)
+// Returns 'done' when finished naturally, or 'abort' when runVer changed
+// ═══════════════════════════════════════════════════════════
+function speak(text,scIdx,ver){
+  return new Promise(resolve=>{
+    setBubble(scIdx,text);
+    setTalking(true);
+
+    if(!window.speechSynthesis||muted){
+      // muted: pace by words, check ver
+      const ms=Math.max(600,text.split(' ').length*85);
+      let done=false;
+      const check=setInterval(()=>{if(runVer!==ver&&!done){done=true;clearInterval(check);setTalking(false);resolve('abort');}},100);
+      setTimeout(()=>{if(!done){done=true;clearInterval(check);setTalking(false);resolve('done');}},ms);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.rate=0.82;u.pitch=1.22;u.volume=1;
+    const v=getVoice();if(v)u.voice=v;
+
+    let settled=false;
+    // Poll for ver change — aborts if rewind/forward fired during speech
+    const verPoll=setInterval(()=>{
+      if(runVer!==ver&&!settled){
+        settled=true;clearInterval(verPoll);
+        window.speechSynthesis.cancel();
+        setTalking(false);resolve('abort');
+      }
+    },150);
+
+    u.onend=()=>{if(!settled){settled=true;clearInterval(verPoll);setTalking(false);resolve('done');}};
+    u.onerror=()=>{if(!settled){settled=true;clearInterval(verPoll);setTalking(false);resolve('done');}};
+    window.speechSynthesis.speak(u);
+  });
+}
+
+// Speak a single word (for tile/shape counting) — returns a promise
+function speakWord(word){
+  return new Promise(resolve=>{
+    if(!window.speechSynthesis||muted){setTimeout(resolve,400);return;}
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(word);
+    u.rate=0.88;u.pitch=1.3;
+    const v=getVoice();if(v)u.voice=v;
+    u.onend=resolve;u.onerror=resolve;
+    window.speechSynthesis.speak(u);
+  });
+}
+
+function setTalking(yes){
+  document.querySelectorAll('.tface').forEach(f=>yes?f.classList.add('talking'):f.classList.remove('talking'));
+  const vw=document.getElementById('vwave');
+  if(vw)yes?vw.classList.add('on'):vw.classList.remove('on');
+}
+function setBubble(idx,text){
+  const el=document.getElementById('bb'+idx);if(!el)return;
+  el.innerHTML='';const words=text.split(' ');let i=0;
+  if(bTimer)clearInterval(bTimer);
+  const pace=Math.max(48,(text.length*50)/words.length);
+  bTimer=setInterval(()=>{
+    if(i<words.length){el.innerHTML=words.slice(0,i+1).join(' ')+'<span style="display:inline-block;width:2px;height:15px;background:#FF6B6B;vertical-align:middle;margin-left:2px;"></span>';i++;}
+    else{clearInterval(bTimer);el.innerHTML=text;}
+  },pace);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SCENE MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+function goScene(idx){
+  document.querySelectorAll('.scene').forEach(s=>{s.classList.remove('active');s.style.display='none';});
+  const el=document.getElementById('sc'+idx);if(el){el.classList.add('active');el.style.display='flex';}
+  currentSc=idx;
+  for(let i=0;i<7;i++){
+    const d=document.getElementById('d'+i);if(!d)continue;
+    d.classList.remove('active','done');
+    if(i<idx)d.classList.add('done');
+    else if(i===idx)d.classList.add('active');
+  }
+  const pf=document.getElementById('prog-fill');
+  if(pf)pf.style.width=((idx/6)*100)+'%';
+}
+
+// Reset a lesson scene's interactive content before running (fixes duplicate tiles on rewind)
+function resetSceneContent(scIdx){
+  const sb=document.getElementById('sb'+scIdx);
+  if(sb){sb.querySelectorAll('.num-tile').forEach(t=>t.remove());}
+  const shb=document.getElementById('shb'+scIdx);
+  if(shb)shb.style.display='none';
+  const shr=document.getElementById('shr'+scIdx);
+  if(shr)shr.innerHTML='';
+  const tp=document.getElementById('tp'+scIdx);
+  if(tp)tp.style.display='none';
+  if(scIdx>=1&&scIdx<=5){
+    const cfg=LESSONS[scIdx-1];
+    const scd=document.getElementById('scd'+scIdx);
+    if(scd)scd.textContent=`0 / ${cfg.shapeCnt}`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// BUILD NUMBER SEARCH BOX
+// BUG FIX: clears tiles before building (prevents duplicates on rewind)
+// Returns 'done' or 'abort'
+// ═══════════════════════════════════════════════════════════
+function buildSearchBox(containerId,target,highlightColor,scIdx,ver){
+  return new Promise(resolve=>{
+    const container=document.getElementById(containerId);
+    // Clear any previous tiles (fixes duplicate on rewind)
+    container.querySelectorAll('.num-tile').forEach(t=>t.remove());
+
+    const others=[1,2,3,4,5].filter(n=>n!==target);
+    let pool=[];
+    for(let i=0;i<4;i++) pool.push(target);
+    others.forEach(n=>{for(let i=0;i<3;i++) pool.push(n);});
+    pool.sort(()=>Math.random()-0.5);
+
+    let found=0;const total=4;
+    let settled=false;
+
+    // Ver watcher — if rewind/forward fires while waiting for taps, abort
+    const verPoll=setInterval(()=>{
+      if(runVer!==ver&&!settled){
+        settled=true;clearInterval(verPoll);resolve('abort');
+      }
+    },200);
+
+    pool.forEach(n=>{
+      const tile=document.createElement('div');
+      tile.className='num-tile';
+      tile.textContent=n;
+      tile.dataset.val=n;
+      if(n===target){
+        tile.onclick=async()=>{
+          if(tile.classList.contains('found')||settled)return;
+          tile.classList.add('found');
+          tile.style.background=highlightColor;
+          tile.style.color='#fff';
+          tile.style.borderColor=highlightColor;
+          tile.style.boxShadow=`0 4px 14px ${highlightColor}88`;
+          found++;
+
+          // Capture final status BEFORE awaiting
+          const isLast=(found===total);
+          if(isLast&&!settled){
+            settled=true;clearInterval(verPoll);
+          }
+
+          await speakWord(NW[found]);
+
+          if(isLast){
+            await delay(380);
+            resolve('done');
+          }
+        };
+      } else {
+        tile.onclick=()=>{
+          if(settled)return;
+          beep();
+          tile.classList.add('wrong-beep');
+          tile.style.background='#FEE';
+          tile.style.borderColor='#FFB3B3';
+          setTimeout(()=>{
+            tile.classList.remove('wrong-beep');
+            tile.style.background='#F0F0F0';
+            tile.style.borderColor='#E0E0E0';
+          },600);
+        };
+      }
+      container.appendChild(tile);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// SHAPES
+// ═══════════════════════════════════════════════════════════
+function shapeSVG(shapeName,color,size=54){
+  const s=size;
+  if(shapeName==='triangle')return`<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}"><polygon points="${s/2},4 ${s-4},${s-4} 4,${s-4}" fill="${color}"/></svg>`;
+  if(shapeName==='circle')return`<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}"><circle cx="${s/2}" cy="${s/2}" r="${s/2-4}" fill="${color}"/></svg>`;
+  if(shapeName==='square')return`<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}"><rect x="4" y="4" width="${s-8}" height="${s-8}" rx="5" fill="${color}"/></svg>`;
+  if(shapeName==='rectangle')return`<svg width="${s*1.6}" height="${s*0.7}" viewBox="0 0 ${s*1.6} ${s*0.7}"><rect x="4" y="4" width="${s*1.6-8}" height="${s*0.7-8}" rx="5" fill="${color}"/></svg>`;
+  if(shapeName==='oval')return`<svg width="${s*1.5}" height="${s*0.85}" viewBox="0 0 ${s*1.5} ${s*0.85}"><ellipse cx="${s*0.75}" cy="${s*0.425}" rx="${s*0.7}" ry="${s*0.38}" fill="${color}"/></svg>`;
+  return'';
+}
+
+// BUG FIX: awaits last count word before resolving (fixes missing final count number)
+function buildShapeBox(rowId,countId,cfg,scIdx,ver){
+  return new Promise(resolve=>{
+    const row=document.getElementById(rowId);
+    const countEl=document.getElementById(countId);
+    row.innerHTML='';
+    let tapped=0;
+    const total=cfg.shapeCnt;
+    let resetting=false,settled=false;
+    const slots=[];
+
+    for(let i=0;i<total;i++){
+      const slot=document.createElement('div');
+      slot.className='shape-slot';
+      slot.innerHTML=shapeSVG(cfg.shapeName,cfg.shapeColor,54);
+      row.appendChild(slot);slots.push(slot);
+    }
+    countEl.textContent=`0 / ${total}`;
+
+    const verPoll=setInterval(()=>{
+      if(runVer!==ver&&!settled){
+        settled=true;clearInterval(verPoll);resolve('abort');
+      }
+    },200);
+
+    const resetAll=async()=>{
+      resetting=true;
+      slots.forEach(s=>s.classList.remove('tapped'));
+      tapped=0;
+      countEl.textContent=`0 / ${total}`;
+      await speak(`Oops! That is too many! Let us start again — tap ${NW[total]} ${cfg.shapeLabel}!`,scIdx,ver);
+      resetting=false;
+      enableSlots();
+    };
+
+    const enableSlots=()=>{
+      slots.forEach(slot=>{
+        slot.onclick=async()=>{
+          if(resetting||settled)return;
+          if(slot.classList.contains('tapped')){
+            beep();slot.classList.add('wrong-beep');
+            setTimeout(()=>slot.classList.remove('wrong-beep'),500);
+            return;
+          }
+          slot.classList.add('tapped');
+          tapped++;
+          countEl.textContent=`${tapped} / ${total}`;
+
+          // Capture whether THIS tap is the final one BEFORE awaiting anything
+          const isLast=(tapped===total);
+
+          // Lock settled immediately on the last tap so no other handler can race in
+          if(isLast&&!settled){
+            settled=true;
+            clearInterval(verPoll);
+            slots.forEach(s=>s.onclick=null);
+          }
+
+          // Always await the spoken count word fully
+          await speakWord(cfg.countWord[tapped-1]);
+
+          // Only the handler that was the last tap resolves
+          if(isLast){
+            await delay(320);
+            resolve('done');
+          }
+        };
+      });
+    };
+    enableSlots();
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONTROLS
+// ═══════════════════════════════════════════════════════════
+function togglePause(){
+  paused=!paused;
+  const btn=document.getElementById('btn-pause');
+  if(paused){
+    btn.textContent='▶ Resume';
+    // Freeze speech exactly where it is
+    if(window.speechSynthesis)window.speechSynthesis.pause();
+    setTalking(false);
+  } else {
+    btn.textContent='⏸ Pause';
+    // Resume from exact point it was frozen
+    if(window.speechSynthesis)window.speechSynthesis.resume();
+    setTalking(true);
+  }
+}
+
+function toggleMute(){
+  muted=!muted;
+  document.getElementById('btn-mute').textContent=muted?'🔇':'🔊';
+  if(muted&&window.speechSynthesis)window.speechSynthesis.cancel();
+}
+
+function rewindScene(){
+  // Cancel any frozen speech first, then abort
+  if(paused){paused=false;document.getElementById('btn-pause').textContent='⏸ Pause';}
+  if(window.speechSynthesis){window.speechSynthesis.resume();window.speechSynthesis.cancel();}
+  setTalking(false);
+  playing=false;
+  runVer++;   // signals speak() and buildSearchBox/buildShapeBox to abort
+  const target=Math.max(0,currentSc-1);
+  const ver=runVer;
+  setTimeout(()=>{
+    if(runVer!==ver)return;
+    playing=true;
+    runFrom(target,ver);
+  },250);
+}
+
+function forwardScene(){
+  if(paused){paused=false;document.getElementById('btn-pause').textContent='⏸ Pause';}
+  if(window.speechSynthesis){window.speechSynthesis.resume();window.speechSynthesis.cancel();}
+  setTalking(false);
+  playing=false;
+  runVer++;
+  const target=Math.min(6,currentSc+1);
+  const ver=runVer;
+  setTimeout(()=>{
+    if(runVer!==ver)return;
+    playing=true;
+    runFrom(target,ver);
+  },250);
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAIN FLOW
+// ═══════════════════════════════════════════════════════════
+async function startVideo(){
+  if(playing)return;
+  playing=true;
+  document.getElementById('btn-start').style.display='none';
+  document.getElementById('btn-pause').style.display='inline-flex';
+  document.getElementById('btn-rewind').style.display='inline-flex';
+  document.getElementById('btn-forward').style.display='inline-flex';
+  runVer++;
+  await runFrom(0,runVer);
+}
+
+async function runFrom(start,ver){
+  for(let sc=start;sc<=6;sc++){
+    if(runVer!==ver)return;
+    await waitPause();
+    if(runVer!==ver)return;
+    if(sc===0)      { if(await sc0(ver)==='abort')return; }
+    else if(sc<=5)  { if(await scLesson(sc,ver)==='abort')return; }
+    else if(sc===6) { if(await sc6(ver)==='abort')return; }
+    if(runVer!==ver)return;
+    await delay(300);
+  }
+  if(runVer===ver){
+    document.getElementById('btn-fb').style.display='inline-flex';
+    document.getElementById('btn-replay').style.display='inline-flex';
+    document.getElementById('btn-pause').style.display='none';
+    playing=false;
+  }
+}
+
+// Play Again — resets everything cleanly
+async function replayVideo(){
+  if(paused){paused=false;document.getElementById('btn-pause').textContent='⏸ Pause';}
+  if(window.speechSynthesis){window.speechSynthesis.resume();window.speechSynthesis.cancel();}
+  setTalking(false);
+  playing=false;runVer++;
+  document.getElementById('btn-fb').style.display='none';
+  document.getElementById('btn-replay').style.display='none';
+  document.getElementById('btn-pause').style.display='none';
+  // Reset all scene content
+  for(let sc=1;sc<=5;sc++)resetSceneContent(sc);
+  await delay(200);
+  startVideo();
+}
+
+// ═══════════════════════════════════════════════════════════
+// SCENE 0: TITLE
+// ═══════════════════════════════════════════════════════════
+async function sc0(ver){
+  goScene(0);
+  const tc=document.getElementById('tc-nums');tc.innerHTML='';
+  const cols=['#FF6B6B','#27AE60','#2980B9','#FFE000','#E67E22'];
+  [1,2,3,4,5].forEach((n,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText=`width:70px;height:80px;border-radius:14px;background:${cols[i]};display:inline-flex;align-items:center;justify-content:center;font-family:'Fredoka One',cursive;font-size:44px;color:#fff;box-shadow:0 5px 16px ${cols[i]}88;border:3px solid rgba(255,255,255,0.4);animation:pop-in 0.4s cubic-bezier(.34,1.56,.64,1) both;animation-delay:${i*0.15}s;`;
+    d.textContent=n;tc.appendChild(d);
+  });
+  await delay(400);if(runVer!==ver)return'abort';
+  return await speak(`Hello, beautiful girl! I am Miss Numbi! Today we are going to learn to RECOGNISE numbers 1 to 5 and COUNT how many things go with each number! You will tap numbers and shapes yourself — so get your fingers ready! Let us go!`,0,ver);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SCENES 1–5: NUMBER LESSONS
+// ═══════════════════════════════════════════════════════════
+async function scLesson(scIdx,ver){
+  goScene(scIdx);
+  const cfg=LESSONS[scIdx-1];
+  const sbId=`sb${scIdx}`,shbId=`shb${scIdx}`,tpId=`tp${scIdx}`;
+  const shrId=`shr${scIdx}`,scdId=`scd${scIdx}`;
+
+  // RESET content (prevents duplicate tiles and stale shapes on rewind)
+  resetSceneContent(scIdx);
+
+  await delay(280);if(runVer!==ver)return'abort';
+
+  // Part 1: Find the number
+  let r=await speak(`Look at all the numbers in the box! Can you see number ${cfg.target}? Tap every number ${cfg.target} you can find — they will turn ${cfg.shapeLabel.split(' ')[0]}! Count them as you tap!`,scIdx,ver);
+  if(r==='abort')return'abort';
+
+  document.getElementById(tpId).style.display='block';
+  r=await buildSearchBox(sbId,cfg.target,cfg.color,scIdx,ver);
+  if(r==='abort')return'abort';
+  document.getElementById(tpId).style.display='none';
+
+  await waitPause();if(runVer!==ver)return'abort';
+  r=await speak(`Amazing! You found all the ${cfg.target}s! You are so clever! Now let us COUNT ${NW[cfg.target]} ${cfg.shapeLabel}!`,scIdx,ver);
+  if(r==='abort')return'abort';
+
+  // Part 2: Tap shapes
+  document.getElementById(shbId).style.display='flex';
+  await delay(200);if(runVer!==ver)return'abort';
+
+  r=await speak(`Tap ${NW[cfg.target]} ${cfg.shapeLabel}! Count out loud with me as you tap each one. Ready? Go!`,scIdx,ver);
+  if(r==='abort')return'abort';
+
+  r=await buildShapeBox(shrId,scdId,cfg,scIdx,ver);
+  if(r==='abort')return'abort';
+
+  // Breathing gap — ensures last spoken count word is never clipped
+  await delay(550);
+  await waitPause();if(runVer!==ver)return'abort';
+
+  // Speak each count word individually so no number is rushed or skipped
+  r=await speak(`Let us count together!`,scIdx,ver);
+  if(r==='abort')return'abort';
+  for(let i=0;i<cfg.countWord.length;i++){
+    if(runVer!==ver)return'abort';
+    await speakWord(cfg.countWord[i]);
+    await delay(220);
+  }
+  if(runVer!==ver)return'abort';
+  r=await speak(`We counted ${NW[cfg.target]}! You are a SUPERSTAR! Well done!`,scIdx,ver);
+  return r;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SCENE 6: ALL DONE
+// ═══════════════════════════════════════════════════════════
+async function sc6(ver){
+  goScene(6);await delay(200);if(runVer!==ver)return'abort';
+  const sum=document.getElementById('s6-summary');sum.innerHTML='';
+  [{n:3,c:'#E74C3C'},{n:4,c:'#27AE60'},{n:2,c:'#2980B9'},{n:5,c:'#FFE000'},{n:1,c:'#E67E22'}].forEach(x=>{
+    const d=document.createElement('div');
+    d.style.cssText=`width:62px;height:72px;border-radius:14px;background:${x.c};display:inline-flex;align-items:center;justify-content:center;font-family:'Fredoka One',cursive;font-size:40px;color:#fff;box-shadow:0 5px 16px ${x.c}88;animation:pop-in 0.4s cubic-bezier(.34,1.56,.64,1) both;`;
+    d.textContent=x.n;sum.appendChild(d);
+  });
+  return await speak(`YOU DID IT! You recognised and counted ALL the numbers from 1 to 5! Number 3 — three red triangles! Number 4 — four green circles! Number 2 — two blue squares! Number 5 — five yellow rectangles! Number 1 — one orange oval! You are an INCREDIBLE mathematician! I am SO proud of you! See you in the next lesson! Bye bye!`,6,ver);
+}
+
+// ═══════════════════════════════════════════════════════════
+// FEEDBACK
+// ═══════════════════════════════════════════════════════════
+function openFB(){document.getElementById('fb-overlay').classList.add('open');document.getElementById('fb-thanks').style.display='none';document.querySelector('.fb-btns').style.display='flex';}
+function closeFB(){document.getElementById('fb-overlay').classList.remove('open');}
+function selE(el,v){document.querySelectorAll('.fb-e').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');selEmoji=v;}
+function sendFB(){
+  if(!selEmoji){alert('Please tap an emoji first!');return;}
+  const name=document.getElementById('fb-name').value.trim();
+  const note=document.getElementById('fb-note').value.trim();
+  const msg=`📊 *NUMBI Feedback — Balmoral Primary*\nChild: ${name||'(not given)'}\nResult: ${selEmoji}\n`+(note?`Note: ${note}\n`:'')+`Lesson: Recognise Numbers 1–5 – Grade 1`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
+  document.getElementById('fb-thanks').style.display='block';
+  document.querySelector('.fb-btns').style.display='none';
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+const style=document.createElement('style');
+style.textContent='@keyframes pop-in{from{transform:scale(0) rotate(-14deg);opacity:0;}to{transform:scale(1);opacity:1;}}';
+document.head.appendChild(style);
+</script>
+</body>
+</html>
